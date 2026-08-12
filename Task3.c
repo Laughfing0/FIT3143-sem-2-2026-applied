@@ -26,6 +26,8 @@
  *     and comparing it with the serial version.
  *
  * Compile:
+ *     docker start -ai fit3143
+ *     cd /workspace    
  *     gcc task3.c -o task3 -lm -fopenmp
  *
  * Run:
