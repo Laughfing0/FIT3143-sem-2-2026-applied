@@ -1,5 +1,5 @@
-/* task2.c
- * Parallel (POSIX Threads) version of task1.c.
+/* Task2.c
+ * Parallel (POSIX Threads) version of Task1.c.
  * Finds and prints all prime numbers strictly less than n.
  *
  * Partitioning scheme: BLOCK (contiguous-range) partitioning.
@@ -19,11 +19,10 @@
  *   the same way before comparing speedups.
  *
  * Compile:
- *     gcc task2.c -o task2 -lm -lpthread
+ *     gcc Task2.c -o Task2 -lm -lpthread; Compiled using gcc compiler with the math library linked for mathematical functions and the pthread library linked for POSIX threads
  *
  * Run:
- *     ./task2
- *     (enter n and number of threads when prompted)
+ *     ./Task2
  */
 #include <stdio.h>
 #include <stdlib.h>

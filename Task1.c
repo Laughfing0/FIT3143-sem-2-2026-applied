@@ -3,10 +3,10 @@
  * Purpose: Find and print all prime numbers strictly less than an integer n entered by the user.
  *
  * Compile:
- *     gcc task1.c -o task1 -lm
+ *     gcc Task1.c -o Task1 -lm; Compiled using gcc compiler with the math library linked for mathematical functions and the output executable named Task1
  *
  * Run:
- *     ./task1
+ *     ./Task1
  */
 
 /* Imports needed for the task */

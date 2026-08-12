@@ -27,8 +27,8 @@
  *
  * Compile:
  *     docker start -ai fit3143
- *     cd /workspace    
- *     gcc task3.c -o task3 -lm -fopenmp
+ *     cd /workspace
+ *     gcc task3.c -o task3 -lm -fopenmp; Compiled using gcc compiler with the math library linked for mathematical functions and the OpenMP library linked for parallel programming
  *
  * Run:
  *     ./task3
