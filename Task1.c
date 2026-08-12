@@ -1,5 +1,5 @@
-#include <stdio.h>
-#include <math.h>
+#include <stdio.h> #Import the standard Input/Output Library
+#include <math.h> #Import the math library for using the sqrt() function
 
 // Task 1 - Serial Code - Finding Prime Numbers
 
