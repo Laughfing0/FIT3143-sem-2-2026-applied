@@ -1,5 +1,6 @@
-/* task1.c
- * Find and print all prime numbers strictly less than n.
+/* Task1.c
+ *
+ * Purpose: Find and print all prime numbers strictly less than an integer n entered by the user.
  *
  * Compile:
  *     gcc task1.c -o task1 -lm
@@ -8,8 +9,9 @@
  *     ./task1
  */
 
-#include <stdio.h>
-#include <stdlib.h>
+/* Imports needed for the task */
+#include <stdio.h> /* Gives standard Input/Output functionality */
+#include <stdlib.h> /* */
 #include <math.h>
 #include <time.h>
 
