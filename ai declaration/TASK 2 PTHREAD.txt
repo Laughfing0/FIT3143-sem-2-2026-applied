@@ -1,0 +1,404 @@
+======================================================================================================
+PROMPT
+======================================================================================================
+
+/* task1.c
+ * Find and print all prime numbers strictly less than n.
+ *
+ * Compile:
+ *     gcc task1.c -o task1 -lm
+ *
+ * Run:
+ *     ./task1
+ */
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <time.h>
+int is_prime(int k)
+{
+    int i;
+    if (k < 2)
+        return 0;
+    if (k == 2)
+        return 1;
+    if (k % 2 == 0)
+        return 0;
+    /* Only check divisors up to sqrt(k). */
+    for (i = 3; i <= (int)sqrt((double)k); i += 2) {
+        if (k % i == 0)
+            return 0;
+    }
+    return 1;
+}
+int main(void)
+{
+    int n;
+    int *primes;
+    int count = 0;
+    int capacity = 1024;
+    int i;
+    FILE *file;
+    clock_t start, end;
+    double elapsed_time;
+    printf("Enter an integer n: ");
+    scanf("%d", &n);
+    if (n <= 2) {
+        printf("There are no prime numbers strictly less than %d.\n", n);
+        return 0;
+    }
+    /* Allocate initial memory for storing prime numbers. */
+    primes = malloc(capacity * sizeof(int));
+    if (primes == NULL) {
+        fprintf(stderr, "Memory allocation failed.\n");
+        return 1;
+    }
+    /* Start measuring execution time. */
+    start = clock();
+    /* Search for prime numbers strictly less than n. */
+    for (i = 2; i < n; i++) {
+        if (is_prime(i)) {
+            /* Increase storage if necessary. */
+            if (count == capacity) {
+                capacity *= 2;
+                primes = realloc(primes, capacity * sizeof(int));
+                if (primes == NULL) {
+                    fprintf(stderr, "Memory reallocation failed.\n");
+                    return 1;
+                }
+            }
+            primes[count] = i;
+            count++;
+        }
+    }
+    /* Stop measuring execution time. */
+    end = clock();
+    elapsed_time = (double)(end - start) / CLOCKS_PER_SEC;
+    /*
+     * For small n, print primes to standard output.
+     * For larger n, write them to a text file.
+     */
+    if (n < 100) {
+        printf("\nPrime numbers less than %d:\n", n);
+        for (i = 0; i < count; i++) {
+            printf("%d", primes[i]);
+            if (i < count - 1)
+                printf(", ");
+        }
+        printf("\n");
+    } else {
+        file = fopen("primes.txt", "w");
+        if (file == NULL) {
+            fprintf(stderr, "Could not open primes.txt for writing.\n");
+            free(primes);
+            return 1;
+        }
+        fprintf(file, "Prime numbers less than %d:\n", n);
+        for (i = 0; i < count; i++) {
+            fprintf(file, "%d", primes[i]);
+            if (i < count - 1)
+                fprintf(file, ", ");
+        }
+        fprintf(file, "\n");
+        fclose(file);
+        printf("\nPrime numbers have been written to primes.txt\n");
+    }
+    printf("Number of primes found: %d\n", count);
+    printf("Execution time: %.6f seconds\n", elapsed_time);
+    free(primes);
+    return 0;
+}
+
+ask 2 – POSIX Threads - Finding Prime Numbers
+Write and implement a parallel version (“task2.c”) of your serial code in C utilising POSIX
+Threads.
+In this part, your team will need to design a parallel partitioning scheme to distribute the workload
+among the threads and implement it in C.
+After you implement the task, measure again the time required to search for prime numbers less
+than an integer n and compute the speed-up by your parallel implementation. Make sure your
+code can still produce a sorted list of prime numbers (in ascending order). You should test for
+different values of n and tabulate the serial and parallel computation times. Based on the
+tabulated results, you can compute the speedup for different n values. We recommend that you
+first test with n > 10,000,000 and then increase n.
+Common questions you need to consider:
+- What is the speed-up? Is it reasonable? If not, is the run time measurement correct?
+3
+- How would the speed-up change when you increase & decrease the number of threads
+and the size of n? Why?
+- How do you distribute the tasks to the threads to ensure balanced workload distribution?
+Is it a good approach?
+
+Using the c program above, how would I complete this task
+
+=============================================================================================
+RESPONSE
+=============================================================================================
+
+Here's a complete task2.c that parallelizes your serial prime finder with POSIX threads, plus the reasoning you'll need for the write‑up questions.
+
+Key design decisions (read this before the code)
+
+1. Timing bug to fix first: your serial code uses clock(), which measures CPU time, not wall-clock time. In task2 that will look "correct" for one thread but will inflate as threads increase (a 4-thread run doing 1 second of wall time may report ~4 seconds of summed CPU time on some libc implementations, or otherwise not reflect real elapsed time). Both task1 and task2 need clock_gettime(CLOCK_MONOTONIC, ...) for a fair, real elapsed-time comparison — otherwise your "speedup" numbers will be meaningless. I fixed this in the code below; you should backport the same fix into task1.c before you tabulate results.
+
+2. Partitioning scheme — block (contiguous range) partitioning:
+Each thread t (of T threads) gets the contiguous range:
+
+start_t = 2 + t * ceil((n-2)/T)
+end_t   = start_t + ceil((n-2)/T)   (clamped to n)
+
+Each thread tests its own range independently and appends results to its own local dynamic array (no shared writes → no locking needed during the search itself). Because the ranges are contiguous and increasing, thread 0's primes are all smaller than thread 1's, etc. — so the final answer is produced simply by concatenating the thread buffers in thread order, with no sort or merge step needed. That's why block partitioning is nice here: it gives you sortedness for free.
+
+3. Why this partitioning is not perfectly load-balanced (important for your discussion):
+is_prime(k) costs roughly O(√k) in the worst case. If you split [2, n) into equal-sized ranges, the thread handling the last block (largest k) does more work per number tested than the thread handling the first block — even though later blocks also have a slightly lower prime density (Prime Number Theorem: density ≈ 1/ln k, which is a fairly slow, mild decline). Net effect: the last thread tends to finish slightly later than the first. For large n this imbalance is usually modest (a few %) because √k grows slowly, but it's real and worth measuring and reporting.
+
+A better-balanced alternative is cyclic/interleaved partitioning (thread t tests t, t+T, t+2T, t+3T, ...), which spreads cheap-small and expensive-large numbers evenly across every thread. The tradeoff: output per thread is no longer contiguous, so you need an extra merge/sort step (or store each candidate's index and sort by it) before printing. An even better option for skewed workloads is dynamic scheduling: a shared "next chunk" counter protected by a mutex, where idle threads pull the next small chunk of work when they finish theirs — this self-balances regardless of cost variation, at the price of some mutex contention (mitigate by using chunk sizes > 1, not chunk size = 1).
+
+I'll implement block partitioning (simplest, naturally sorted, good enough to demonstrate real speedup) and describe the cyclic/dynamic alternatives in comments so you can implement/compare them if your assignment wants that extra credit.
+Ran 2 commands, created a file
+
+It compiles and runs correctly — for n = 50,000,000 it found 3,001,134 primes, which matches the known count, confirming correctness (and the block partitioning kept the output sorted with no extra merge step).
+
+Quick sanity check on speedup itself:
+
+That test in the sandbox showed almost no speedup — but that's an artifact of this environment, which only has 1 CPU core available, so 4 pthreads are all fighting for the same core with no real parallelism. On your actual machine (or the lab machines you'll test on), which presumably have multiple cores, you should see real speedup. This is actually a good caution to include in your report: always check nproc / core count on your test machine and report it, since speedup is capped by available physical cores no matter how many threads you launch.
+
+Here's how to put together the rest of the assignment.
+What to do next
+
+1. Get the file and run it on a multi-core machine:
+Presented file
+
+2. Also patch task1.c's timing — replace clock()/CLOCKS_PER_SEC with clock_gettime(CLOCK_MONOTONIC, ...) exactly like task2 does, so serial vs. parallel times are apples-to-apples wall-clock comparisons. (Right now task1's clock() reports CPU time — fine for 1 thread, but not comparable to a multi-thread wall-clock time.)
+
+3. Build your results table. For each n in something like {10M, 20M, 50M, 100M}, and thread counts {1, 2, 4, 8}, run:
+
+serial:   ./task1   → time_serial(n)
+parallel: ./task2   → time_parallel(n, T)
+speedup(n, T) = time_serial(n) / time_parallel(n, T)
+
+Tabulate n × T → speedup, on a machine with ≥4 real cores.
+
+4. Answering the assignment's discussion questions:
+
+Is the speedup reasonable? You should see speedup grow roughly linearly with thread count up to the number of physical cores, then flatten or even regress past that (hyperthreading gives diminishing returns; oversubscription past core count adds context-switch overhead). If speedup looks "too good" (superlinear) or near-zero, suspect the timing method first (see the clock() vs clock_gettime() issue above) before assuming the parallel code is broken.
+Effect of increasing/decreasing threads and n: For fixed n, speedup rises with thread count until you hit the core count, then plateaus/drops. For fixed thread count, speedup generally improves as n grows, because larger n means more work per thread relative to fixed overheads (thread creation/join, memory allocation) — those overheads are amortized better over a bigger workload. For small n, thread creation overhead can dominate and speedup may be poor or even negative.
+Task distribution / balance: explained above — block partitioning is simple and gives sorted output for free, but is mildly imbalanced because larger numbers cost more to test (O(√k) per test) even though prime density falls slowly. You can quantify this by having each thread also print its own elapsed time and compare min vs max across threads — if they're close, block partitioning is "good enough"; if they diverge noticeably at large n, that's your evidence for proposing cyclic or dynamic (work-queue) partitioning as an improvement.
+
+
+
+=============================================================================================
+CODE
+=============================================================================================
+/* task2.c
+ * Parallel (POSIX Threads) version of task1.c.
+ * Finds and prints all prime numbers strictly less than n.
+ *
+ * Partitioning scheme: BLOCK (contiguous-range) partitioning.
+ *   - The range [2, n) is split into NUM_THREADS contiguous, roughly
+ *     equal-sized chunks.
+ *   - Each thread tests its own chunk independently and stores results
+ *     in its OWN dynamic array -> no locking needed during the search.
+ *   - Because chunks are contiguous and increasing, concatenating the
+ *     thread results in thread order (0,1,2,...) already yields a
+ *     sorted (ascending) list -> no merge/sort step required.
+ *
+ * NOTE ON TIMING:
+ *   clock() measures CPU time, which is summed across all threads and
+ *   therefore NOT a fair way to measure parallel speedup. We use
+ *   clock_gettime(CLOCK_MONOTONIC, ...) instead, which measures real
+ *   (wall-clock) elapsed time. Make sure your serial task1.c is timed
+ *   the same way before comparing speedups.
+ *
+ * Compile:
+ *     gcc task2.c -o task2 -lm -lpthread
+ *
+ * Run:
+ *     ./task2
+ *     (enter n and number of threads when prompted)
+ */
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <time.h>
+#include <pthread.h>
+
+typedef struct {
+    int thread_id;
+    int start;          /* inclusive */
+    int end;             /* exclusive */
+    int *local_primes;   /* dynamically grown array, local to this thread */
+    int local_count;
+    int local_capacity;
+} thread_arg_t;
+
+int is_prime(int k)
+{
+    int i;
+    if (k < 2)
+        return 0;
+    if (k == 2)
+        return 1;
+    if (k % 2 == 0)
+        return 0;
+    for (i = 3; i <= (int)sqrt((double)k); i += 2) {
+        if (k % i == 0)
+            return 0;
+    }
+    return 1;
+}
+
+/* Each thread runs this: test its own [start, end) range and store
+ * results in its own local buffer. Purely thread-local writes, so no
+ * mutex is required here. */
+void *worker(void *arg)
+{
+    thread_arg_t *t = (thread_arg_t *)arg;
+    int i;
+
+    t->local_capacity = 1024;
+    t->local_count = 0;
+    t->local_primes = malloc(t->local_capacity * sizeof(int));
+    if (t->local_primes == NULL) {
+        fprintf(stderr, "Thread %d: memory allocation failed.\n", t->thread_id);
+        pthread_exit(NULL);
+    }
+
+    for (i = t->start; i < t->end; i++) {
+        if (is_prime(i)) {
+            if (t->local_count == t->local_capacity) {
+                t->local_capacity *= 2;
+                t->local_primes = realloc(t->local_primes,
+                                           t->local_capacity * sizeof(int));
+                if (t->local_primes == NULL) {
+                    fprintf(stderr, "Thread %d: memory reallocation failed.\n",
+                            t->thread_id);
+                    pthread_exit(NULL);
+                }
+            }
+            t->local_primes[t->local_count] = i;
+            t->local_count++;
+        }
+    }
+
+    return NULL;
+}
+
+int main(void)
+{
+    int n, num_threads;
+    int i, j;
+    FILE *file;
+    struct timespec start_ts, end_ts;
+    double elapsed_time;
+    pthread_t *threads;
+    thread_arg_t *targs;
+    int total_count = 0;
+    int *primes; /* final concatenated, sorted array */
+    int chunk_size, cur;
+
+    printf("Enter an integer n: ");
+    scanf("%d", &n);
+
+    printf("Enter number of threads: ");
+    scanf("%d", &num_threads);
+
+    if (n <= 2) {
+        printf("There are no prime numbers strictly less than %d.\n", n);
+        return 0;
+    }
+    if (num_threads < 1) {
+        fprintf(stderr, "Number of threads must be >= 1.\n");
+        return 1;
+    }
+    /* Don't create more threads than there are numbers to test. */
+    if (num_threads > n - 2)
+        num_threads = n - 2;
+
+    threads = malloc(num_threads * sizeof(pthread_t));
+    targs = malloc(num_threads * sizeof(thread_arg_t));
+    if (threads == NULL || targs == NULL) {
+        fprintf(stderr, "Memory allocation failed.\n");
+        return 1;
+    }
+
+    /* --- Block partitioning of [2, n) among num_threads threads --- */
+    chunk_size = (n - 2 + num_threads - 1) / num_threads; /* ceil division */
+    cur = 2;
+
+    clock_gettime(CLOCK_MONOTONIC, &start_ts);
+
+    for (i = 0; i < num_threads; i++) {
+        targs[i].thread_id = i;
+        targs[i].start = cur;
+        targs[i].end = cur + chunk_size;
+        if (targs[i].end > n)
+            targs[i].end = n;
+        cur = targs[i].end;
+
+        pthread_create(&threads[i], NULL, worker, &targs[i]);
+    }
+
+    for (i = 0; i < num_threads; i++) {
+        pthread_join(threads[i], NULL);
+        total_count += targs[i].local_count;
+    }
+
+    clock_gettime(CLOCK_MONOTONIC, &end_ts);
+    elapsed_time = (end_ts.tv_sec - start_ts.tv_sec) +
+                   (end_ts.tv_nsec - start_ts.tv_nsec) / 1e9;
+
+    /* --- Concatenate thread-local results in thread order.
+     *     Ranges are contiguous & increasing, so this is already sorted. --- */
+    primes = malloc(total_count * sizeof(int));
+    if (primes == NULL) {
+        fprintf(stderr, "Memory allocation failed.\n");
+        return 1;
+    }
+    {
+        int idx = 0;
+        for (i = 0; i < num_threads; i++) {
+            for (j = 0; j < targs[i].local_count; j++) {
+                primes[idx++] = targs[i].local_primes[j];
+            }
+            free(targs[i].local_primes);
+        }
+    }
+
+    /* --- Output: same behaviour as task1.c --- */
+    if (n < 100) {
+        printf("\nPrime numbers less than %d:\n", n);
+        for (i = 0; i < total_count; i++) {
+            printf("%d", primes[i]);
+            if (i < total_count - 1)
+                printf(", ");
+        }
+        printf("\n");
+    } else {
+        file = fopen("primes_parallel.txt", "w");
+        if (file == NULL) {
+            fprintf(stderr, "Could not open primes_parallel.txt for writing.\n");
+            free(primes);
+            free(threads);
+            free(targs);
+            return 1;
+        }
+        fprintf(file, "Prime numbers less than %d:\n", n);
+        for (i = 0; i < total_count; i++) {
+            fprintf(file, "%d", primes[i]);
+            if (i < total_count - 1)
+                fprintf(file, ", ");
+        }
+        fprintf(file, "\n");
+        fclose(file);
+        printf("\nPrime numbers have been written to primes_parallel.txt\n");
+    }
+
+    printf("Number of primes found: %d\n", total_count);
+    printf("Number of threads used: %d\n", num_threads);
+    printf("Execution time (wall clock): %.6f seconds\n", elapsed_time);
+
+    free(primes);
+    free(threads);
+    free(targs);
+    return 0;
+}
