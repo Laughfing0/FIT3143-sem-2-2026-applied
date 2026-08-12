@@ -1,5 +1,26 @@
-#include <stdio.h> #Import the standard Input/Output Library
-#include <math.h> #Import the math library for using the sqrt() function
+#include <stdio.h>
+#include <math.h>
+#include <stdlib.h>
+#include <time.h>
+
+
+int prime_check(int k)
+{
+    int i;
+
+    if (k < 2) {
+        return 0;
+    }
+
+    if (k == 2) {
+        return 1;
+    }
+
+    if (k % 2 == 0) {
+        return 0;
+    }
+}
+
 
 // Task 1 - Serial Code - Finding Prime Numbers
 
@@ -17,7 +38,7 @@ Requirements:
 
 int main(int argc, char *argv[]) {
 
-    // user input integer
+    // take user input
     long long number;
     printf("Input integer: \n");
     scanf("%lld", &number);
@@ -31,7 +52,9 @@ int main(int argc, char *argv[]) {
     }
 
 
-    // Take user input
+    // Once we have input 
+
+
     
 
 
