@@ -1,6 +1,7 @@
 /* task2.c
- * Parallel (POSIX Threads) version of task1.c.
- * Finds and prints all prime numbers strictly less than n.
+ * 
+ * Purpose: Find and print all prime numbers strictly less than an integer n
+ *          entered by the user using POSIX Threads for parallel processing
  *
  * Partitioning scheme: BLOCK (contiguous-range) partitioning.
  *   - The range [2, n) is split into NUM_THREADS contiguous, roughly
