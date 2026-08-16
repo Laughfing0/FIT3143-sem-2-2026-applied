@@ -97,18 +97,11 @@ void *worker(void *arg)
      * Convert the generic void pointer back into a pointer
      * to our thread_arg_t structure.
      *
-     * This allows the thread to access its own:
-     *     - thread ID
-     *     - start value
-     *     - end value
-     *     - local prime array
-     *     - count
-     *     - capacity
+     * This allows the thread to access its own: attributes.
      */
     thread_arg_t *t = (thread_arg_t *)arg;
 
     int i; /* Variable used to iterate through this thread's assigned range */
-
 
     /*
      * Give this thread's local prime array an initial
@@ -121,7 +114,6 @@ void *worker(void *arg)
      */
     t->local_count = 0;
 
-
     /*
      * Allocate memory for this thread's local prime array.
      *
@@ -132,7 +124,6 @@ void *worker(void *arg)
      */
     t->local_primes =
         malloc(t->local_capacity * sizeof(int));
-
 
     /*
      * Check whether memory allocation was successful.
@@ -151,7 +142,6 @@ void *worker(void *arg)
          */
         pthread_exit(NULL);
     }
-
 
     /*
      * Search through this thread's assigned range.
@@ -247,7 +237,6 @@ void *worker(void *arg)
     return NULL;
 }
 
-
 /* Main function to find and print prime numbers using POSIX Threads */
 int main(void) /* The main function does not accept any arguments and returns an integer */
 {
@@ -261,15 +250,13 @@ int main(void) /* The main function does not accept any arguments and returns an
 
     FILE *file; /* File pointer used to write prime numbers to a text file */
 
-
     /*
      * Array of pthread_t objects.
      *
-     * Each element represents one POSIX thread created
+     * Each element of the array represents one POSIX thread created
      * by the program.
      */
     pthread_t *threads;
-
 
     /*
      * Array of thread_arg_t structures.
@@ -278,7 +265,6 @@ int main(void) /* The main function does not accept any arguments and returns an
      * to one thread.
      */
     thread_arg_t *targs;
-
 
     /*
      * Variables used to measure wall-clock execution time.
@@ -289,16 +275,13 @@ int main(void) /* The main function does not accept any arguments and returns an
      */
     struct timespec start_ts, end_ts;
 
-
     double elapsed_time; /* Variable to store the elapsed execution time in seconds */
-
 
     /*
      * Stores the total number of prime numbers found
      * by all threads.
      */
     int total_count = 0;
-
 
     /*
      * Pointer to the final array containing all prime numbers.
@@ -308,13 +291,11 @@ int main(void) /* The main function does not accept any arguments and returns an
      */
     int *primes;
 
-
     /*
      * chunk_size stores the size of each block assigned
      * to a thread.
      */
     int chunk_size;
-
 
     /*
      * cur stores the first number that has not yet been
@@ -322,10 +303,8 @@ int main(void) /* The main function does not accept any arguments and returns an
      */
     int cur;
 
-
     /* Ask the user to enter the upper limit n */
     printf("Enter an integer n: ");
-
 
     /*
      * Read the integer entered by the user.
@@ -335,16 +314,13 @@ int main(void) /* The main function does not accept any arguments and returns an
      */
     scanf("%d", &n);
 
-
     /* Ask the user how many threads should be created */
     printf("Enter number of threads: ");
-
 
     /*
      * Read the number of threads entered by the user.
      */
     scanf("%d", &num_threads);
-
 
     /*
      * If n <= 2, there are no prime numbers strictly
@@ -365,7 +341,6 @@ int main(void) /* The main function does not accept any arguments and returns an
         return 0;
     }
 
-
     /*
      * At least one thread is required.
      *
@@ -381,7 +356,6 @@ int main(void) /* The main function does not accept any arguments and returns an
         return 1;
     }
 
-
     /*
      * There are n - 2 numbers that need to be tested:
      *
@@ -396,7 +370,6 @@ int main(void) /* The main function does not accept any arguments and returns an
     if (num_threads > n - 2)
         num_threads = n - 2;
 
-
     /*
      * Allocate memory for the array of POSIX Threads.
      *
@@ -404,7 +377,6 @@ int main(void) /* The main function does not accept any arguments and returns an
      */
     threads =
         malloc(num_threads * sizeof(pthread_t));
-
 
     /*
      * Allocate memory for the array of thread arguments.
@@ -414,7 +386,6 @@ int main(void) /* The main function does not accept any arguments and returns an
      */
     targs =
         malloc(num_threads * sizeof(thread_arg_t));
-
 
     /*
      * Check whether either memory allocation failed.
@@ -429,7 +400,6 @@ int main(void) /* The main function does not accept any arguments and returns an
 
         return 1;
     }
-
 
     /*
      * =========================================================
@@ -448,7 +418,6 @@ int main(void) /* The main function does not accept any arguments and returns an
      * contiguous blocks.
      */
 
-
     /*
      * Calculate the size of each block.
      *
@@ -463,12 +432,10 @@ int main(void) /* The main function does not accept any arguments and returns an
     chunk_size =
         (n - 2 + num_threads - 1) / num_threads;
 
-
     /*
      * Start assigning numbers from 2.
      */
     cur = 2;
-
 
     /*
      * Create the range assigned to each thread.
@@ -484,7 +451,6 @@ int main(void) /* The main function does not accept any arguments and returns an
          */
         targs[i].thread_id = i;
 
-
         /*
          * The current number becomes the start of
          * this thread's range.
@@ -493,14 +459,12 @@ int main(void) /* The main function does not accept any arguments and returns an
          */
         targs[i].start = cur;
 
-
         /*
          * Calculate the end of this thread's range.
          *
          * end is exclusive.
          */
         targs[i].end = cur + chunk_size;
-
 
         /*
          * Make sure the thread does not receive numbers
@@ -509,7 +473,6 @@ int main(void) /* The main function does not accept any arguments and returns an
         if (targs[i].end > n)
             targs[i].end = n;
 
-
         /*
          * Move cur to the end of this block.
          *
@@ -517,7 +480,6 @@ int main(void) /* The main function does not accept any arguments and returns an
          * current thread finishes.
          */
         cur = targs[i].end;
-
 
         /*
          * Initialise the local result variables.
@@ -530,7 +492,6 @@ int main(void) /* The main function does not accept any arguments and returns an
         targs[i].local_capacity = 0;
     }
 
-
     /*
      * =========================================================
      * START TIMING
@@ -540,13 +501,12 @@ int main(void) /* The main function does not accept any arguments and returns an
      *
      * CLOCK_MONOTONIC is used because it provides a clock
      * that moves forward consistently and is not affected
-     * by changes to the system's calendar time.
+     * by changes to the system time.
      */
     clock_gettime(
         CLOCK_MONOTONIC,
         &start_ts
     );
-
 
     /*
      * =========================================================
@@ -616,7 +576,6 @@ int main(void) /* The main function does not accept any arguments and returns an
         total_count += targs[i].local_count;
     }
 
-
     /*
      * =========================================================
      * STOP TIMING
@@ -631,7 +590,6 @@ int main(void) /* The main function does not accept any arguments and returns an
         CLOCK_MONOTONIC,
         &end_ts
     );
-
 
     /*
      * Calculate elapsed wall-clock time.
@@ -651,7 +609,6 @@ int main(void) /* The main function does not accept any arguments and returns an
         (end_ts.tv_sec - start_ts.tv_sec) +
         (end_ts.tv_nsec - start_ts.tv_nsec) / 1e9;
 
-
     /*
      * =========================================================
      * CREATE FINAL PRIME ARRAY
@@ -665,7 +622,6 @@ int main(void) /* The main function does not accept any arguments and returns an
     primes =
         malloc(total_count * sizeof(int));
 
-
     /*
      * Check whether memory allocation succeeded.
      */
@@ -676,7 +632,7 @@ int main(void) /* The main function does not accept any arguments and returns an
         );
 
         /*
-         * Free each thread's local array before exiting.
+         * Free each thread's local array before exiting if not enough memory was available for the final array.
          */
         for (i = 0; i < num_threads; i++)
             free(targs[i].local_primes);
@@ -689,7 +645,6 @@ int main(void) /* The main function does not accept any arguments and returns an
 
         return 1;
     }
-
 
     /*
      * =========================================================
@@ -716,14 +671,12 @@ int main(void) /* The main function does not accept any arguments and returns an
      * Therefore, no sorting algorithm is required.
      */
 
-
     /*
      * idx stores the position where the next prime number
      * should be placed in the final primes array.
      */
     {
         int idx = 0;
-
 
         /*
          * Process the thread results in order:
@@ -745,14 +698,12 @@ int main(void) /* The main function does not accept any arguments and returns an
                 primes[idx] =
                     targs[i].local_primes[j];
 
-
                 /*
                  * Move to the next position in the
                  * final array.
                  */
                 idx++;
             }
-
 
             /*
              * The thread's local array is no longer
@@ -762,7 +713,6 @@ int main(void) /* The main function does not accept any arguments and returns an
             free(targs[i].local_primes);
         }
     }
-
 
     /*
      * =========================================================
@@ -816,7 +766,6 @@ int main(void) /* The main function does not accept any arguments and returns an
         printf("\n");
     }
 
-
     /*
      * For larger n, write the prime numbers to a text file.
      */
@@ -831,7 +780,6 @@ int main(void) /* The main function does not accept any arguments and returns an
             "w"
         );
 
-
         /*
          * Check whether the file was opened successfully.
          */
@@ -842,7 +790,6 @@ int main(void) /* The main function does not accept any arguments and returns an
                 "Could not open primes_parallel.txt "
                 "for writing.\n"
             );
-
 
             /*
              * Free dynamically allocated memory before
@@ -855,7 +802,6 @@ int main(void) /* The main function does not accept any arguments and returns an
             return 1;
         }
 
-
         /*
          * Write a heading to the output file.
          */
@@ -864,7 +810,6 @@ int main(void) /* The main function does not accept any arguments and returns an
             "Prime numbers less than %d:\n",
             n
         );
-
 
         /*
          * Write every prime number to the file.
@@ -880,7 +825,6 @@ int main(void) /* The main function does not accept any arguments and returns an
                 primes[i]
             );
 
-
             /*
              * Write a comma between values,
              * but not after the final value.
@@ -889,19 +833,16 @@ int main(void) /* The main function does not accept any arguments and returns an
                 fprintf(file, ", ");
         }
 
-
         /*
          * Add a newline at the end of the file.
          */
         fprintf(file, "\n");
-
 
         /*
          * Close the file after all prime numbers
          * have been written.
          */
         fclose(file);
-
 
         /*
          * Tell the user that the results have been
@@ -912,7 +853,6 @@ int main(void) /* The main function does not accept any arguments and returns an
             "to primes_parallel.txt\n"
         );
     }
-
 
     /*
      * =========================================================
@@ -929,7 +869,6 @@ int main(void) /* The main function does not accept any arguments and returns an
         total_count
     );
 
-
     /*
      * Print the number of threads used for the calculation.
      */
@@ -937,7 +876,6 @@ int main(void) /* The main function does not accept any arguments and returns an
         "Number of threads used: %d\n",
         num_threads
     );
-
 
     /*
      * Print the wall-clock execution time.
@@ -951,7 +889,6 @@ int main(void) /* The main function does not accept any arguments and returns an
         elapsed_time
     );
 
-
     /*
      * =========================================================
      * FREE MEMORY
@@ -963,18 +900,15 @@ int main(void) /* The main function does not accept any arguments and returns an
      */
     free(primes);
 
-
     /*
      * Free the array containing the pthread_t objects.
      */
     free(threads);
 
-
     /*
      * Free the array containing information for each thread.
      */
     free(targs);
-
 
     /*
      * Return 0 to indicate that the program completed
