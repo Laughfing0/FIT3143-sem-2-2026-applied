@@ -258,12 +258,6 @@ int main(void) /* The main function does not accept any arguments and returns an
     /*
      * If n <= 2, there are no prime numbers strictly
      * less than n.
-     *
-     * For example:
-     *
-     *     n = 2
-     *
-     * There are no prime numbers less than 2.
      */
     if (n <= 2)
     {
@@ -277,9 +271,6 @@ int main(void) /* The main function does not accept any arguments and returns an
 
     /*
      * At least one thread is required.
-     *
-     * If the user enters 0 or a negative number,
-     * display an error and terminate the program.
      */
     if (num_threads < 1)
     {
@@ -293,11 +284,6 @@ int main(void) /* The main function does not accept any arguments and returns an
 
     /*
      * There are n - 2 candidate numbers to test:
-     *
-     *     2, 3, 4, ..., n - 1
-     *
-     * There is no benefit in creating more threads
-     * than there are numbers to test.
      */
     if (num_threads > n - 2)
         num_threads = n - 2;
@@ -306,18 +292,10 @@ int main(void) /* The main function does not accept any arguments and returns an
        Allocate thread/block information
        ======================================================== */
 
-    /*
-     * Allocate memory for an array of thread_arg_t structures.
-     *
-     * There is one structure for each block of work.
-     */
     targs = malloc(
         num_threads * sizeof(thread_arg_t)
     );
 
-    /*
-     * Check whether the memory allocation was successful.
-     */
     if (targs == NULL)
     {
         fprintf(
@@ -351,20 +329,11 @@ int main(void) /* The main function does not accept any arguments and returns an
     /*
      * cur stores the first number that has not yet
      * been assigned to a block.
-     *
-     * The search begins at 2.
      */
     cur = 2;
 
     /*
      * Create the ranges for each block.
-     *
-     * For example, with n = 100 and 4 threads:
-     *
-     *     Block 0: [2, 27)
-     *     Block 1: [27, 52)
-     *     Block 2: [52, 77)
-     *     Block 3: [77, 100)
      */
     for (i = 0; i < num_threads; i++)
     {
@@ -376,16 +345,8 @@ int main(void) /* The main function does not accept any arguments and returns an
          */
         targs[i].thread_id = i;
 
-        /*
-         * Store the first number in this block.
-         */
         targs[i].start = cur;
 
-        /*
-         * Calculate the end of this block.
-         *
-         * The end value is exclusive.
-         */
         targs[i].end = cur + chunk_size;
 
         /*
@@ -393,38 +354,19 @@ int main(void) /* The main function does not accept any arguments and returns an
          */
         if (targs[i].end > n)
             targs[i].end = n;
+        
+        cur = targs[i].end;
 
-        /*
-         * Move cur to the end of the current block.
-         *
-         * This means the next block starts where
-         * the current block finishes.
-         */
-            cur = targs[i].end;
-
-        /*
-         * Initialise the local prime array pointer.
-         *
-         * The actual array will be allocated inside
-         * the parallel section.
-         */
         targs[i].local_primes = NULL;
 
-        /*
-         * No primes have been found yet.
-         */
         targs[i].local_count = 0;
 
-        /*
-         * No storage has been allocated yet.
-         */
         targs[i].local_capacity = 0;
     }
 
     /* ========================================================
        Start timing
        ======================================================== */
-
 
     /*
      * Start the wall-clock timer immediately before
@@ -434,25 +376,14 @@ int main(void) /* The main function does not accept any arguments and returns an
      */
     start_time = omp_get_wtime();
 
-
     /* ========================================================
        Parallel prime-number search
        ======================================================== */
 
-
     /*
-     * This is the main difference between Task 2 and Task 3.
-     *
      * #pragma omp parallel for tells OpenMP to divide
      * the iterations of the following for loop between
-     * multiple threads.
-     *
-     * num_threads(num_threads)
-     *     Requests the number of threads specified by the user.
-     *
-     * schedule(static)
-     *     Gives threads fixed, contiguous chunks of loop
-     *     iterations.
+     * multiple threads i.e. parallelise the loop.
      *
      * This matches the BLOCK partitioning strategy.
      */
@@ -472,67 +403,34 @@ int main(void) /* The main function does not accept any arguments and returns an
          */
         int j;
 
-
-        /*
-         * Give this block's local prime array an
-         * initial capacity of 1024 integers.
-         */
         targs[i].local_capacity = 1024;
 
-
-        /*
-         * No primes have been found in this block yet.
-         */
         targs[i].local_count = 0;
 
-
-        /*
-         * Allocate memory for this block's local
-         * prime-number array.
-         *
-         * Each block has its OWN array.
-         */
         targs[i].local_primes =
             malloc(
                 targs[i].local_capacity * sizeof(int)
             );
 
-
-        /*
-         * Check whether memory allocation succeeded.
-         */
         if (targs[i].local_primes == NULL)
         {
-            /*
-             * Print an error identifying which block
-             * failed to allocate memory.
-             */
+
             fprintf(
                 stderr,
                 "Thread %d: memory allocation failed.\n",
                 targs[i].thread_id
             );
 
-
             /*
-             * Skip this block if memory allocation failed.
-             *
              * The continue statement moves to the next
              * iteration of the OpenMP loop.
              */
             continue;
         }
 
-
         /*
-         * Search through this block's assigned range.
-         *
-         * The range is:
-         *
+         * Search through this block's assigned range:
          *     start <= j < end
-         *
-         * Therefore, j starts at the block's first number
-         * and stops before the block's end value.
          */
         for (
             j = targs[i].start;
@@ -540,44 +438,24 @@ int main(void) /* The main function does not accept any arguments and returns an
             j++
         )
         {
-            /*
-             * Check whether the current number j is prime.
-             */
+
             if (is_prime(j))
             {
-                /*
-                 * Check whether the local array is full.
-                 */
+
                 if (
                     targs[i].local_count ==
                     targs[i].local_capacity
                 )
                 {
-                    /*
-                     * Double the amount of memory available
-                     * for this block's prime array.
-                     */
+               
                     targs[i].local_capacity *= 2;
 
-
-                    /*
-                     * realloc() attempts to resize the
-                     * existing array to the new capacity.
-                     *
-                     * A temporary pointer is used so that
-                     * the original pointer is not lost if
-                     * realloc() fails.
-                     */
                     int *temp = realloc(
                         targs[i].local_primes,
                         targs[i].local_capacity *
                             sizeof(int)
                     );
 
-
-                    /*
-                     * Check whether realloc() succeeded.
-                     */
                     if (temp == NULL)
                     {
                         fprintf(
@@ -586,58 +464,26 @@ int main(void) /* The main function does not accept any arguments and returns an
                             targs[i].thread_id
                         );
 
-
-                        /*
-                         * Free the original local array
-                         * because this block cannot continue.
-                         */
                         free(targs[i].local_primes);
 
-
-                        /*
-                         * Set the pointer to NULL so that
-                         * it does not point to freed memory.
-                         */
                         targs[i].local_primes = NULL;
 
-
-                        /*
-                         * Stop processing this block.
-                         */
                         break;
                     }
 
-
-                    /*
-                     * realloc() succeeded, so update the
-                     * pointer to point to the resized array.
-                     */
                     targs[i].local_primes = temp;
                 }
 
-
-                /*
-                 * Store the prime number j in this block's
-                 * local array.
-                 */
                 targs[i].local_primes[
                     targs[i].local_count
                 ] = j;
 
-
-                /*
-                 * Increase the number of primes found
-                 * in this block.
-                 */
                 targs[i].local_count++;
             }
         }
     }
 
-
     /*
-     * IMPORTANT:
-     *
      * The program does not continue past an OpenMP
      * parallel-for until all iterations have completed.
      *
@@ -645,11 +491,9 @@ int main(void) /* The main function does not accept any arguments and returns an
      * finished their assigned blocks.
      */
 
-
     /* ========================================================
        Stop timing
        ======================================================== */
-
 
     /*
      * Record the wall-clock time after all parallel
@@ -657,49 +501,28 @@ int main(void) /* The main function does not accept any arguments and returns an
      */
     end_time = omp_get_wtime();
 
-
     /*
-     * Calculate the total elapsed wall-clock time.
-     *
-     * Unlike Task 2, there is no need to manually
-     * calculate seconds and nanoseconds because
-     * omp_get_wtime() already returns seconds as a double.
+     * Calculate the total elapsed wall-clock time
+     * omp_get_wtime() returns seconds as a double.
      */
     elapsed_time = end_time - start_time;
-
 
     /* ========================================================
        Count total number of primes
        ======================================================== */
-
-
-    /*
-     * Add together the number of primes found in
-     * each block.
-     */
     for (i = 0; i < num_threads; i++)
     {
         total_count += targs[i].local_count;
     }
 
-
     /* ========================================================
        Create final prime array
        ======================================================== */
 
-
-    /*
-     * Allocate enough memory to store every prime found
-     * by all OpenMP threads.
-     */
     primes = malloc(
         total_count * sizeof(int)
     );
 
-
-    /*
-     * Check whether the allocation was successful.
-     */
     if (primes == NULL)
     {
         fprintf(
@@ -707,30 +530,19 @@ int main(void) /* The main function does not accept any arguments and returns an
             "Memory allocation failed.\n"
         );
 
-
-        /*
-         * Free the local arrays belonging to each block.
-         */
         for (i = 0; i < num_threads; i++)
         {
             free(targs[i].local_primes);
         }
 
-
-        /*
-         * Free the thread/block information array.
-         */
         free(targs);
-
 
         return 1;
     }
 
-
     /* ========================================================
        Concatenate thread/block results
        ======================================================== */
-
 
     /*
      * idx stores the next available position
@@ -739,25 +551,14 @@ int main(void) /* The main function does not accept any arguments and returns an
     {
         int idx = 0;
 
-
         /*
-         * Process the blocks in increasing order:
-         *
-         *     Block 0
-         *     Block 1
-         *     Block 2
-         *     ...
-         *
-         * Because the blocks contain increasing ranges
-         * of numbers, their results are already sorted
+         * Process the blocks in increasing order, so the 
+         * increasing ranges of numbers are already sorted
          * relative to one another.
          */
         for (i = 0; i < num_threads; i++)
         {
-            /*
-             * Copy each prime from the current block's
-             * local array into the final array.
-             */
+            
             for (
                 j = 0;
                 j < targs[i].local_count;
@@ -767,14 +568,8 @@ int main(void) /* The main function does not accept any arguments and returns an
                 primes[idx] =
                     targs[i].local_primes[j];
 
-
-                /*
-                 * Move to the next position in the
-                 * final primes array.
-                 */
                 idx++;
             }
-
 
             /*
              * The local array is no longer required,
@@ -784,11 +579,9 @@ int main(void) /* The main function does not accept any arguments and returns an
         }
     }
 
-
     /* ========================================================
        Output results
        ======================================================== */
-
 
     /*
      * For small n values, print the prime numbers
@@ -796,45 +589,26 @@ int main(void) /* The main function does not accept any arguments and returns an
      */
     if (n < 100)
     {
-        /*
-         * Print a heading for the list.
-         */
+
         printf(
             "\nPrime numbers less than %d:\n",
             n
         );
 
-
-        /*
-         * Print every prime number in ascending order.
-         */
         for (i = 0; i < total_count; i++)
         {
-            /*
-             * Print the current prime.
-             */
+
             printf(
                 "%d",
                 primes[i]
             );
 
-
-            /*
-             * Print a comma between values,
-             * but not after the final value.
-             */
             if (i < total_count - 1)
                 printf(", ");
         }
 
-
-        /*
-         * Move to the next line after printing the
-         * complete list.
-         */
         printf("\n");
     }
-
 
     /*
      * For larger n values, write the prime numbers
@@ -842,18 +616,12 @@ int main(void) /* The main function does not accept any arguments and returns an
      */
     else
     {
-        /*
-         * Open the output file in write mode.
-         */
+
         file = fopen(
             "primes_openmp.txt",
             "w"
         );
 
-
-        /*
-         * Check whether the file was opened successfully.
-         */
         if (file == NULL)
         {
             fprintf(
@@ -862,10 +630,6 @@ int main(void) /* The main function does not accept any arguments and returns an
                 "for writing.\n"
             );
 
-
-            /*
-             * Free allocated memory before exiting.
-             */
             free(primes);
             free(targs);
 
@@ -873,57 +637,32 @@ int main(void) /* The main function does not accept any arguments and returns an
             return 1;
         }
 
-
-        /*
-         * Write a heading to the output file.
-         */
         fprintf(
             file,
             "Prime numbers less than %d:\n",
             n
         );
 
-
         /*
          * Write every prime number to the file.
          */
         for (i = 0; i < total_count; i++)
         {
-            /*
-             * Write the current prime number.
-             */
+
             fprintf(
                 file,
                 "%d",
                 primes[i]
             );
 
-
-            /*
-             * Add a comma between values,
-             * but not after the final value.
-             */
             if (i < total_count - 1)
                 fprintf(file, ", ");
         }
 
-
-        /*
-         * Add a newline at the end of the file.
-         */
         fprintf(file, "\n");
 
-
-        /*
-         * Close the file after all results have
-         * been written.
-         */
         fclose(file);
 
-
-        /*
-         * Inform the user that the results were
-         * successfully written to the file.
          */
         printf(
             "\nPrime numbers have been written "
@@ -931,57 +670,30 @@ int main(void) /* The main function does not accept any arguments and returns an
         );
     }
 
-
     /* ========================================================
        Print statistics
        ======================================================== */
-
-
-    /*
-     * Print the total number of prime numbers found.
-     */
     printf(
         "Number of primes found: %d\n",
         total_count
     );
 
-
-    /*
-     * Print the number of OpenMP threads used.
-     */
     printf(
         "Number of threads used: %d\n",
         num_threads
     );
 
-
-    /*
-     * Print the wall-clock execution time
-     * to six decimal places.
-     */
     printf(
         "Execution time (wall clock): %.6f seconds\n",
         elapsed_time
     );
 
-
     /* ========================================================
        Free allocated memory
        ======================================================== */
-
-
-    /*
-     * Free the final array containing all prime numbers.
-     */
     free(primes);
 
-
-    /*
-     * Free the array containing the information
-     * for each block/thread.
-     */
     free(targs);
-
 
     /*
      * Return 0 to indicate successful execution.
