@@ -17,3 +17,8 @@ MPI Communication
 The 2D mesh represents the communication topology of the simulated WSN, while MPI represents the communication mechanism used to distribute and coordinate the simulation across the cluster. A charging node may have neighbours belonging to either the same or a different MPI rank. Communication between nodes within the same rank can occur through local/shared memory, whereas communication between nodes assigned to different MPI ranks will use MPI message passing. Communication between charging nodes and the base station will also use MPI.
 
 The charging-node partitions therefore do not change the underlying WSN topology. They only determine which MPI process is responsible for simulating each group of charging nodes. Spatial partitioning can be used so that geographically close nodes are generally assigned to the same MPI process, reducing inter-process communication while still allowing boundary nodes to communicate with neighbouring nodes in other partitions through MPI.
+
+
+Cluster and Parallel Execution Architecture
+
+The proposed prototype will use a cluster of two multi-core machines, with eight physical CPU cores per machine. MPI Rank 0 will be dedicated to the base station, while the remaining MPI ranks will simulate spatial partitions of the 2D charging-node mesh. The charging nodes will be distributed across the available processes using domain decomposition (even sub-partitioning), with geographically adjacent nodes preferably assigned to the same process to reduce inter-process communication. The architecture can be scaled by adding additional MPI processes and machines as the number of charging nodes increases.
