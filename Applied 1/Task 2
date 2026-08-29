@@ -1,0 +1,3 @@
+Overall architecture:
+
+The simulation will use a hybrid distributed-memory architecture. MPI will distribute the simulation across multiple processes in a cluster, with MPI Rank 0 representing the base station and the remaining ranks responsible for partitions of the 2D mesh of charging nodes. Within each machine, shared-memory parallelism will be used to concurrently process charging nodes and their associated charging ports.
