@@ -1,3 +1,19 @@
-Overall architecture:
+Overall Architecture
 
-The simulation will use a hybrid distributed-memory architecture. MPI will distribute the simulation across multiple processes in a cluster, with MPI Rank 0 representing the base station and the remaining ranks responsible for partitions of the 2D mesh of charging nodes. Within each machine, shared-memory parallelism will be used to concurrently process charging nodes and their associated charging ports.
+The simulation will use a hybrid distributed-memory architecture. MPI will distribute the simulation across multiple processes in a cluster, with MPI Rank 0 representing the base station and the remaining MPI ranks responsible for simulating partitions of the 2D mesh of charging nodes. Within each machine, shared-memory parallelism can be used to simulate multiple charging nodes concurrently.
+
+
+Component Representation and Responsibilities
+
+The base station will maintain global information about the charging network, including the availability and utilisation of charging nodes. It will receive node information, identify heavily utilised areas, determine suitable alternative charging nodes, and issue redirection instructions.
+
+Each charging node (EV charging station) will be represented as an object containing its location, neighbouring nodes, utilisation threshold, and associated charging ports. Each node will monitor the status of its ports and calculate its overall utilisation. When its utilisation exceeds the specified threshold, it will request status information from its neighbouring nodes. If the node and its neighbours are heavily utilised, the node will notify the base station.
+
+Each charging port will be represented as a local component of its charging node. It will maintain its individual state, such as available or occupied. Ports will not be assigned separate MPI processes because their state can be managed locally by their associated charging node, avoiding unnecessary communication overhead.
+
+
+MPI Communication
+
+The 2D mesh represents the communication topology of the simulated WSN, while MPI represents the communication mechanism used to distribute and coordinate the simulation across the cluster. A charging node may have neighbours belonging to either the same or a different MPI rank. Communication between nodes within the same rank can occur through local/shared memory, whereas communication between nodes assigned to different MPI ranks will use MPI message passing. Communication between charging nodes and the base station will also use MPI.
+
+The charging-node partitions therefore do not change the underlying WSN topology. They only determine which MPI process is responsible for simulating each group of charging nodes. Spatial partitioning can be used so that geographically close nodes are generally assigned to the same MPI process, reducing inter-process communication while still allowing boundary nodes to communicate with neighbouring nodes in other partitions through MPI.
