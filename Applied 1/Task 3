@@ -1,6 +1,4 @@
-3(a)
-
-Assuming a 1Gbps network bandwidth, the transmission delay for a message of size S bits is:
+a. Assuming a 1Gbps network bandwidth, the transmission delay for a message of size S bits is:
 
 T = S / B
 T = S / 1Gbps
@@ -34,3 +32,34 @@ Overall result
 Increasing the number of charging nodes does not increase the theoretical transmission delay of an individual MPI message, assuming fixed message sizes and a fixed 1 Gbps link.
 
 Instead, it increases the number of messages and aggregate communication workload. For the 2D mesh, neighbour communication therefore has O(1) per-message transmission delay and O(N) aggregate communication complexity.
+
+b. For the proposed architecture, increasing the number of base stations can reduce the overall communication and processing delay by distributing charging nodes and their messages across multiple servers:
+- Neighbour status request
+    - Transmission delay per message: T = S / 10^9
+    - Increasing the number of base stations does not directly reduce the transmission delay of an individual request because the message size and link bandwidth remain unchanged
+    However, distributing charging nodes across multiple base stations can reduce the communication and processing workload handled by each server
+    This can reduce queuing and processing delays when many charging nodes send requests simultaneously
+
+- Neighbour status response
+    - Transmission delay per message: T = S / 10^9
+    - Increasing the number of base stations does not change the theoretical transmission delay of an individual response
+    - Responses can be distributed across multiple servers, reducing the likelihood of congestion and server-side queuing
+    - Therefore, the overall response time may decrease under high communication loads
+
+- Overload alert
+    - Transmission delay per message: T = S / 10^9
+    - Increasing the number of base stations can distribute overload alerts across multiple servers
+    - This reduces the number of alerts processed by each individual server and can reduce queuing and processing delays
+    - However, the transmission delay of each individual alert remains unchanged
+- Redirection instruction
+    - Transmission delay per message: T = S / 10^9
+    - Multiple base stations can process redirection requests in parallel, reducing server-side processing and queuing delays
+    - The transmission delay of an individual redirection instruction remains unchanged because the message size and network bandwidth are fixed
+    - The benefit is therefore mainly from reduced processing and congestion rather than reduced transmission time
+
+Overall result
+Increasing the number of base stations does not reduce the theoretical transmission delay of an individual MPI message, assuming fixed message sizes and 1 Gbps links.
+
+Instead, multiple base stations distribute the communication and processing workload across servers. This can reduce queuing, congestion and processing delays, particularly as the number of charging nodes increases.
+
+Therefore, increasing the number of base stations can reduce the overall communication delay, but the individual transmission delay remains T = S / 10^9.
