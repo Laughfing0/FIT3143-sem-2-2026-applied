@@ -22,3 +22,5 @@ The charging-node partitions therefore do not change the underlying WSN topology
 Cluster and Parallel Execution Architecture
 
 The proposed prototype will use a cluster of two multi-core machines, with eight physical CPU cores per machine. MPI Rank 0 will be dedicated to the base station, while the remaining MPI ranks will simulate spatial partitions of the 2D charging-node mesh. The charging nodes will be distributed across the available processes using domain decomposition (even sub-partitioning), with geographically adjacent nodes preferably assigned to the same process to reduce inter-process communication. The architecture can be scaled by adding additional MPI processes and machines as the number of charging nodes increases.
+
+Each charging node may communicate with zero or more neighbouring charging nodes. In the selected 2D mesh topology, a node has a maximum of four immediate neighbours.
