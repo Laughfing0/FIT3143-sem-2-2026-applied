@@ -1,0 +1,36 @@
+3(a)
+
+Assuming a 1Gbps network bandwidth, the transmission delay for a message of size S bits is:
+
+T = S / B
+T = S / 1Gbps
+T = S / 10^9
+
+For the proposed architecture, four types of MPI messages are used:
+- Neighbour status request
+    - Transmission delay per message: T = S / 10^9
+    - Scaling with number of charging nodes N: O(1) per message, O(N) total communication
+    - Each charging node communicates with at most four immediate neighbours in the 2D mesh. Consequently, increasing N does not increase the transmission delay of an individual request
+    - However, the total number of neighbour requests increases proportionally with the number of charging nodes
+
+- Neighbour status response
+    - Transmission delay per message: T = S / 10^9
+    - Scaling with number of charging nodes N: O(1) per message, O(N) total communication
+    - Each neighbour returns its utilisation and charging-port status, with the total number of responses increases with the number of charging nodes
+
+- Overload alert
+    - Transmission delay per message: T = S / 10^9
+    - Scaling with number of charging nodes N: O(1) per message, O(N) worst-case total communication
+    - An overloaded charging node sends an alert to the base station
+    - The number of possible alerts increases with N
+
+- Redirection instruction
+    - Transmission delay per message: T = S / 10^9
+    - Scaling with number of charging nodes N: O(1) per message, O(N) worst-case total communication
+    - The base station sends a redirection instruction when an alternative charging node is required.
+    - The number of redirection messages depends on the number of overload events. In the worst case, this can increase proportionally with N
+
+Overall result
+Increasing the number of charging nodes does not increase the theoretical transmission delay of an individual MPI message, assuming fixed message sizes and a fixed 1 Gbps link.
+
+Instead, it increases the number of messages and aggregate communication workload. For the 2D mesh, neighbour communication therefore has O(1) per-message transmission delay and O(N) aggregate communication complexity.
