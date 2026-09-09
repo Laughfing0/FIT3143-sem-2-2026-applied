@@ -213,17 +213,13 @@ int main(int argc, char *argv[])
      */
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-
     /* ========================================================
        Get input
        ======================================================== */
-
     /*
      * Only the root process reads the command-line argument.
      *
-     * Example:
-     *
-     *     mpirun -np 4 ./Task1 10000000
+     * Example: mpirun -np 4 ./Task1 10000000
      */
     if (rank == 0)
     {
@@ -234,19 +230,21 @@ int main(int argc, char *argv[])
         {
             fprintf(
                 stderr,
-                "Usage: %s <n>\n",
+                "Usage: %s <n>\n", /* Print usage message telling the user to provide a value for n after the given argument */
                 argv[0]
             );
 
             /*
-             * Abort all MPI processes because root cannot
+             * Abort all MPI processes since the root cannot
              * continue without a valid value of n.
+             * 
+             * It displays an non-zero exit code to indicate failure.
              */
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
 
         /*
-         * Convert the command-line argument from a string
+         * Convert the command-line argument n from an ASCII string
          * to an integer.
          */
         n = atoi(argv[1]);
@@ -265,46 +263,37 @@ int main(int argc, char *argv[])
         }
     }
 
-
     /* ========================================================
        Start overall timing
        ======================================================== */
 
     /*
-     * Start timing before the MPI broadcast.
-     *
-     * This means communication is included in the measured
-     * parallel execution time.
+     * Start timing before the MPI broadcast so that communication is included in the measured parallel execution time.
      */
     start_time = MPI_Wtime();
-
 
     /* ========================================================
        Broadcast n to all MPI processes
        ======================================================== */
-
     /*
      * MPI_Bcast() sends n from the root process (rank 0)
      * to every MPI process.
-     *
-     * After this operation, every process knows n.
      */
     MPI_Bcast(
-        &n,
-        1,
-        MPI_INT,
-        0,
-        MPI_COMM_WORLD
+        &n, /* Pointer to the variable to be broadcast */
+        1, /* Number of elements to broadcast */
+        MPI_INT, /* Data type of the variable being broadcast */
+        0, /* Rank of the root process that holds the initial value of n */
+        MPI_COMM_WORLD /* Communicator that includes all MPI processes */
     );
-
 
     /* ========================================================
        Handle the case where n <= 2
        ======================================================== */
-
     /*
-     * There are no primes strictly less than n
-     * when n <= 2.
+     * There are no primes strictly less than n when n <= 2.
+     *
+     * Ensure the program behaves correctly for all valid integer inputs.
      */
     if (n <= 2)
     {
@@ -316,26 +305,18 @@ int main(int argc, char *argv[])
             );
         }
 
-        MPI_Finalize();
+        MPI_Finalize(); /* Shut down the MPI environment. */
 
         return 0;
     }
 
-
     /* ========================================================
        BLOCK workload partitioning
        ======================================================== */
-
     /*
-     * The candidate range is:
+     * The candidate range is [2, n).
      *
-     *     [2, n)
-     *
-     * Therefore there are:
-     *
-     *     n - 2
-     *
-     * candidate numbers.
+     * Therefore there are n - 2 candidate numbers.
      */
     local_range = n - 2;
 
@@ -364,12 +345,10 @@ int main(int argc, char *argv[])
      */
     remainder = local_range % size;
 
-
     /*
      * Calculate the start and end of this process's block.
      *
-     * The first 'remainder' processes receive one extra
-     * candidate.
+     * First allocate the base chunk to every process, and then allocate the remainder candidates in ascending order to balance the workload.
      *
      * This produces balanced contiguous blocks.
      */
@@ -386,6 +365,7 @@ int main(int argc, char *argv[])
             start +
             (base_chunk + 1);
     }
+
     else
     {
         /*
@@ -402,15 +382,11 @@ int main(int argc, char *argv[])
             base_chunk;
     }
 
-
     /* ========================================================
        Allocate local prime array
        ======================================================== */
-
     /*
-     * Start with space for 1024 primes.
-     *
-     * The array will be expanded using realloc() if necessary.
+     * Start with space for 1024 primes and expand using realloc() if necessary.
      */
     local_capacity = 1024;
 
@@ -432,20 +408,16 @@ int main(int argc, char *argv[])
             rank
         );
 
-        MPI_Abort(MPI_COMM_WORLD, 1);
+        MPI_Abort(MPI_COMM_WORLD, 1); /* Abort the MPI program */
     }
 
 
     /* ========================================================
        Search local block for prime numbers
        ======================================================== */
-
     /*
      * Each MPI process independently searches its own
      * contiguous block.
-     *
-     * There is no shared memory between MPI processes,
-     * so no mutex or lock is required.
      */
     for (i = start; i < end; i++)
     {
@@ -509,14 +481,12 @@ int main(int argc, char *argv[])
         }
     }
 
-
     /* ========================================================
        Gather the number of primes found by each process
        ======================================================== */
-
     /*
      * Only the root process needs an array containing
-     * the number of primes found by each process.
+     * the counts of primes found by each process.
      *
      * For example:
      *
@@ -554,7 +524,6 @@ int main(int argc, char *argv[])
         counts = NULL;
     }
 
-
     /*
      * Gather local prime counts from all processes.
      *
@@ -566,16 +535,15 @@ int main(int argc, char *argv[])
      *     counts[size - 1]
      */
     MPI_Gather(
-        &local_count,
-        1,
-        MPI_INT,
-        counts,
-        1,
-        MPI_INT,
-        0,
-        MPI_COMM_WORLD
+        &local_count, /* Pointer to the local count of primes found by this process */
+        1, /* Number of elements to send  */
+        MPI_INT, /* Data type of the element being sent */
+        counts, /* Pointer to the array where the counts will be gathered on the root process */
+        1, /* Number of elements to receive from each process */
+        MPI_INT, /* Data type of the element being received */
+        0, /* Rank of the root process that will receive the counts */
+        MPI_COMM_WORLD /* Communicator that includes all MPI processes */
     );
-
 
     /* ========================================================
        Prepare Gatherv information on root
@@ -618,16 +586,15 @@ int main(int argc, char *argv[])
         }
 
         /*
-         * Calculate the displacement of each process's
-         * result in the final prime array.
+         * Calculate the displacement of each process's result in the final prime array: where the previous process began + how many primes the previous process found.
          */
         displacements[0] = 0;
 
         for (i = 1; i < size; i++)
         {
             displacements[i] =
-                displacements[i - 1] +
-                counts[i - 1];
+                displacements[i - 1] + /* The displacement of the previous process */
+                counts[i - 1]; /* The number of primes found by the previous process */
         }
 
         /*
@@ -799,12 +766,14 @@ int main(int argc, char *argv[])
              */
             fclose(file);
 
+            /*
+             * Print a message indicating that the results have been written to the file.
+             */
             printf(
                 "\nPrime numbers have been written "
                 "to primes_mpi.txt\n"
             );
         }
-
 
         /* ====================================================
            Print statistics
@@ -820,8 +789,7 @@ int main(int argc, char *argv[])
             size
         );
     }
-
-
+ 
     /* ========================================================
        Stop timing
        ======================================================== */
@@ -848,7 +816,6 @@ int main(int argc, char *argv[])
         end_time -
         start_time;
 
-
     /* ========================================================
        Print execution time
        ======================================================== */
@@ -864,7 +831,6 @@ int main(int argc, char *argv[])
         );
     }
 
-
     /* ========================================================
        Free root memory
        ======================================================== */
@@ -875,7 +841,6 @@ int main(int argc, char *argv[])
         free(counts);
         free(displacements);
     }
-
 
     /* ========================================================
        Finalise MPI
