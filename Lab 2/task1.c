@@ -5,7 +5,6 @@
  *          integer n using MPI for distributed parallel processing.
  *
  * Partitioning scheme: BLOCK (contiguous-range) partitioning.
- *
  *     The range [2, n) is divided into approximately equal-sized
  *     contiguous blocks.
  *
@@ -14,7 +13,6 @@
  *     when the results are combined, the final array is in sorted order.
  * 
  * MPI communication:
- *
  *     MPI_Bcast()
  *         Root process broadcasts n to all MPI processes.
  *
@@ -26,7 +24,6 @@
  *         Gatherv is used to allow variable counts of primes from each process.
  *
  * Timing:
- *
  *     MPI_Wtime() measures real wall-clock elapsed time.
  *
  *     The timer includes:
@@ -37,27 +34,22 @@
  *         - file output
  *
  * Compile:
- *
  *     mpicc Task1.c -o Task1 -lm
  *
  * Run:
- *
  *     mpirun -np 4 ./Task1 10000000
  *
  *     -np 4       = use 4 MPI processes
  *     10000000    = search for primes strictly less than 10,000,000
  *
  * Notes:
- *
  *     Process 0 is the root process and is responsible for:
  *         - receiving the input
  *         - broadcasting n
  *         - collecting the results
  *         - constructing the final sorted array
  *         - writing the output file
- *
  */
-
 
 /* ============================================================
    Imports needed for the task
@@ -67,7 +59,6 @@
 #include <stdlib.h>     /* malloc(), realloc(), free(), atoi() */
 #include <math.h>       /* sqrt() */
 #include <mpi.h>        /* MPI functionality */
-
 
 /* ============================================================
    Function: is_prime
@@ -87,6 +78,9 @@
  */
 int is_prime(int k)
 {
+    /*
+     * Loop variable.
+     */
     int i;
 
     /*
@@ -128,24 +122,14 @@ int is_prime(int k)
     return 1;
 }
 
-
 /* ============================================================
    Main function
    ============================================================ */
 
 int main(int argc, char *argv[])
 {
-    /*
-     * MPI variables.
-     *
-     * rank:
-     *     Identifies the current MPI process.
-     *
-     * size:
-     *     Total number of MPI processes.
-     */
-    int rank;
-    int size;
+    int rank; /* Identifies the current MPI process */
+    int size; /* Total number of MPI processes */
 
     /*
      * n is the upper limit.
@@ -158,18 +142,12 @@ int main(int argc, char *argv[])
     /*
      * Variables describing the local workload.
      *
-     * start:
-     *     First candidate number assigned to this process.
-     *
-     * end:
-     *     First candidate number NOT assigned to this process.
-     *
-     * Therefore the process searches:
+     * The process searches:
      *
      *     start <= i < end
      */
-    int start;
-    int end;
+    int start; /* First candidate number assigned to this process */
+    int end; /* First candidate number NOT assigned to this process */
 
     /*
      * Number of candidate values assigned to this process.
@@ -180,7 +158,7 @@ int main(int argc, char *argv[])
      * Variables used for dynamically storing the primes
      * found by this MPI process.
      */
-    int *local_primes;
+    int *local_primes; /* Dynamically allocated array of primes found by this process */
     int local_count;
     int local_capacity;
 
@@ -188,22 +166,19 @@ int main(int argc, char *argv[])
      * Variables used by the root process when collecting
      * the results from all MPI processes.
      */
-    int *counts;
-    int *displacements;
-    int *primes;
-    int total_count;
+    int *counts; /* Number of primes found by each process */
+    int *displacements; /* Displacement of each process's primes in the final array */
+    int *primes; /* Final array containing all primes found by all processes */
+    int total_count; /* Total number of primes found by all processes */
 
     /*
      * Variables used to calculate the block size.
      */
-    int base_chunk;
-    int remainder;
+    int base_chunk; /* Minimum number of candidates assigned to each process */
+    int remainder; /* Number of extra candidates that cannot be evenly divided among processes */
 
-    /*
-     * Loop variables.
-     */
-    int i;
-    int j;
+    int i; /* Loop variable for candidate numbers */
+    int j; /* Loop variable for gathering results */
 
     /*
      * Timing variables.
@@ -220,15 +195,13 @@ int main(int argc, char *argv[])
      */
     FILE *file;
 
-
     /* ========================================================
        Initialise MPI
        ======================================================== */
-
     /*
      * Start the MPI environment.
      */
-    MPI_Init(&argc, &argv);
+    MPI_Init(&argc, &argv); /* Passes address of number of command-line arguments and the array of command-line arguments */
 
     /*
      * Determine the rank of this process.
