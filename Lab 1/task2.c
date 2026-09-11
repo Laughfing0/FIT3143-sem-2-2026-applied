@@ -6,8 +6,8 @@
  * Partitioning scheme: BLOCK partitioning
  *   - The range [2, n) is divided into approximately equal-sized
  *     contiguous blocks, with each block assigned to one thread.
- *   - Each thread checks its own block independently and stores the
- *     prime numbers it finds in its own dynamically allocated array.
+ *   - Each thread checks its own block independently and stores
+ *     the prime numbers it finds in its own dynamically allocated array.
  *   - Since each thread has its own array, the threads do not need
  *     to access or modify the same array during the prime search,
  *     meaning no mutex or lock is required for thread safety.
@@ -21,7 +21,9 @@
  *   - This is more appropriate for measuring parallel execution time
  *     than clock(), because clock() measures CPU time which can be
  *     accumulated across multiple threads.
- *   - Therefore, it is not an accurate measure of parallel speedup.
+ *   - The timer measures the overall execution time, including
+ *     thread creation, prime searching, result collection,
+ *     result processing, and file output.
  *
  * Compile:
  *     gcc task2.c -o task2 -lm -lpthread; Compiled using gcc compiler with the math library linked for mathematical functions and the pthread library linked for POSIX threads
@@ -371,6 +373,26 @@ int main(void) /* The main function does not accept any arguments and returns an
         num_threads = n - 2;
 
     /*
+     * =========================================================
+     * START TIMING
+     * =========================================================
+     *
+     * clock_gettime() records the current wall-clock time.
+     *
+     * CLOCK_MONOTONIC is used because it provides a clock
+     * that moves forward consistently and is not affected
+     * by changes to the system time.
+     *
+     * The timer starts before the parallel setup so that
+     * the overall execution time includes thread-related
+     * setup and workload preparation.
+     */
+    clock_gettime(
+        CLOCK_MONOTONIC,
+        &start_ts
+    );
+
+    /*
      * Allocate memory for the array of POSIX Threads.
      *
      * There will be one pthread_t object for each thread.
@@ -494,22 +516,6 @@ int main(void) /* The main function does not accept any arguments and returns an
 
     /*
      * =========================================================
-     * START TIMING
-     * =========================================================
-     *
-     * clock_gettime() records the current wall-clock time.
-     *
-     * CLOCK_MONOTONIC is used because it provides a clock
-     * that moves forward consistently and is not affected
-     * by changes to the system time.
-     */
-    clock_gettime(
-        CLOCK_MONOTONIC,
-        &start_ts
-    );
-
-    /*
-     * =========================================================
      * CREATE THE THREADS
      * =========================================================
      *
@@ -575,39 +581,6 @@ int main(void) /* The main function does not accept any arguments and returns an
          */
         total_count += targs[i].local_count;
     }
-
-    /*
-     * =========================================================
-     * STOP TIMING
-     * =========================================================
-     *
-     * At this point, every thread has finished its search.
-     *
-     * Therefore, the time measured includes the complete
-     * parallel prime-search process.
-     */
-    clock_gettime(
-        CLOCK_MONOTONIC,
-        &end_ts
-    );
-
-    /*
-     * Calculate elapsed wall-clock time.
-     *
-     * First calculate the difference in seconds:
-     *
-     *     end_ts.tv_sec - start_ts.tv_sec
-     *
-     * Then calculate the difference in nanoseconds:
-     *
-     *     end_ts.tv_nsec - start_ts.tv_nsec
-     *
-     * Dividing the nanoseconds by 1e9 converts them
-     * into seconds.
-     */
-    elapsed_time =
-        (end_ts.tv_sec - start_ts.tv_sec) +
-        (end_ts.tv_nsec - start_ts.tv_nsec) / 1e9;
 
     /*
      * =========================================================
@@ -853,6 +826,46 @@ int main(void) /* The main function does not accept any arguments and returns an
             "to primes_parallel.txt\n"
         );
     }
+
+    /*
+     * =========================================================
+     * STOP TIMING
+     * =========================================================
+     *
+     * The timer is stopped after all processing and output
+     * have completed.
+     *
+     * Therefore, the measured overall wall-clock time includes:
+     *
+     *     - thread creation
+     *     - parallel prime searching
+     *     - thread joining
+     *     - result collection
+     *     - result processing
+     *     - file output
+     */
+    clock_gettime(
+        CLOCK_MONOTONIC,
+        &end_ts
+    );
+
+    /*
+     * Calculate elapsed wall-clock time.
+     *
+     * First calculate the difference in seconds:
+     *
+     *     end_ts.tv_sec - start_ts.tv_sec
+     *
+     * Then calculate the difference in nanoseconds:
+     *
+     *     end_ts.tv_nsec - start_ts.tv_nsec
+     *
+     * Dividing the nanoseconds by 1e9 converts them
+     * into seconds.
+     */
+    elapsed_time =
+        (end_ts.tv_sec - start_ts.tv_sec) +
+        (end_ts.tv_nsec - start_ts.tv_nsec) / 1e9;
 
     /*
      * =========================================================

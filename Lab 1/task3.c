@@ -1,3 +1,4 @@
+```c
 /*
  * Task3.c
  *
@@ -288,6 +289,18 @@ int main(void) /* The main function does not accept any arguments and returns an
     if (num_threads > n - 2)
         num_threads = n - 2;
 
+    /*
+     * ========================================================
+     * Start timing
+     * ========================================================
+     *
+     * Start the overall wall-clock timer before the
+     * parallel setup, so that the timing includes the
+     * workload preparation as well as the parallel search,
+     * result processing, and output.
+     */
+    start_time = omp_get_wtime();
+
     /* ========================================================
        Allocate thread/block information
        ======================================================== */
@@ -363,18 +376,6 @@ int main(void) /* The main function does not accept any arguments and returns an
 
         targs[i].local_capacity = 0;
     }
-
-    /* ========================================================
-       Start timing
-       ======================================================== */
-
-    /*
-     * Start the wall-clock timer immediately before
-     * the parallel prime-number calculation.
-     *
-     * omp_get_wtime() returns the current time in seconds.
-     */
-    start_time = omp_get_wtime();
 
     /* ========================================================
        Parallel prime-number search
@@ -490,22 +491,6 @@ int main(void) /* The main function does not accept any arguments and returns an
      * Therefore, by this point all OpenMP threads have
      * finished their assigned blocks.
      */
-
-    /* ========================================================
-       Stop timing
-       ======================================================== */
-
-    /*
-     * Record the wall-clock time after all parallel
-     * work has completed.
-     */
-    end_time = omp_get_wtime();
-
-    /*
-     * Calculate the total elapsed wall-clock time
-     * omp_get_wtime() returns seconds as a double.
-     */
-    elapsed_time = end_time - start_time;
 
     /* ========================================================
        Count total number of primes
@@ -670,6 +655,22 @@ int main(void) /* The main function does not accept any arguments and returns an
         );
     }
 
+    /*
+     * ========================================================
+     * Stop timing
+     * ========================================================
+     *
+     * Stop the timer after all parallel computation,
+     * result collection, processing, and output have
+     * completed.
+     */
+    end_time = omp_get_wtime();
+
+    /*
+     * Calculate the total elapsed wall-clock time.
+     */
+    elapsed_time = end_time - start_time;
+
     /* ========================================================
        Print statistics
        ======================================================== */
@@ -700,3 +701,4 @@ int main(void) /* The main function does not accept any arguments and returns an
      */
     return 0;
 }
+```

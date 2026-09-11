@@ -52,7 +52,15 @@ int main(void) /* The main function does not accept any arguments and returns an
     int capacity = 1024; /* Initial capacity for the primes array */
     int i; /* Variable to iterate through numbers */
     FILE *file; /* File pointer to write prime numbers to a file */
-    clock_t start, end; /* Variables to measure execution time of type clock_t */
+
+    /*
+     * Variables used to measure wall-clock execution time.
+     *
+     * clock_gettime() with CLOCK_MONOTONIC measures real
+     * elapsed time and is appropriate for comparing
+     * serial and parallel execution times.
+     */
+    struct timespec start, end;
     double elapsed_time; /* Variable to store elapsed time in seconds */
 
     printf("Enter an integer n: "); /* Prompt the user to enter an integer n */
@@ -63,6 +71,15 @@ int main(void) /* The main function does not accept any arguments and returns an
         return 0; /* Exit the program if n is less than or equal to 2 */
     }
 
+    /*
+     * Start measuring overall wall-clock execution time.
+     *
+     * The timer starts before memory allocation and the
+     * prime-number search so that the measurement represents
+     * the overall execution time of the program's main work.
+     */
+    clock_gettime(CLOCK_MONOTONIC, &start);
+
     /* Allocate initial memory for storing prime numbers using the capacity and size needed to store a single integer. */
     primes = malloc(capacity * sizeof(int));
 
@@ -71,9 +88,6 @@ int main(void) /* The main function does not accept any arguments and returns an
         fprintf(stderr, "Memory allocation failed.\n"); /* Prints a standard error message */
         return 1; /* Exit the program with a 1 to indicate an error */
     }
-
-    /* Start measuring execution time using the clock() function */
-    start = clock();
 
     /* Search for prime numbers strictly less than n. */
     for (i = 2; i < n; i++) {
@@ -95,12 +109,6 @@ int main(void) /* The main function does not accept any arguments and returns an
             count++; /* Increment the count of prime numbers found */
         }
     }
-
-    /* Stop measuring execution time. */
-    end = clock();
-
-    /* Calculate elapsed time in seconds by subtracting the start time from the end time and dividing by CLOCKS_PER_SEC to convert clock ticks to seconds. */
-    elapsed_time = (double)(end - start) / CLOCKS_PER_SEC;
 
     /*
      * For small n, print primes to standard output.
@@ -145,8 +153,27 @@ int main(void) /* The main function does not accept any arguments and returns an
         printf("\nPrime numbers have been written to Primes.txt\n");
     }
 
+    /*
+     * Stop measuring overall wall-clock execution time.
+     *
+     * The timer is stopped after the prime search,
+     * result processing, and file/terminal output have
+     * completed.
+     */
+    clock_gettime(CLOCK_MONOTONIC, &end);
+
+    /*
+     * Calculate elapsed wall-clock time in seconds.
+     *
+     * tv_sec stores whole seconds and tv_nsec stores
+     * nanoseconds.
+     */
+    elapsed_time =
+        (double)(end.tv_sec - start.tv_sec) +
+        (double)(end.tv_nsec - start.tv_nsec) / 1000000000.0;
+
     printf("Number of primes found: %d\n", count);
-    printf("Execution time: %.6f seconds\n", elapsed_time); /* Print the execution time in seconds, to six decimal places */
+    printf("Execution time: %.6f seconds\n", elapsed_time); /* Print the overall wall-clock execution time in seconds, to six decimal places */
 
     free(primes); /* Free the dynamically allocated memory for the primes array to prevent memory leaks */
 
