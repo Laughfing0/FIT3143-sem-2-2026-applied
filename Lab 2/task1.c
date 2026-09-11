@@ -1,5 +1,5 @@
 /*
- * Task1.c
+ * task1.c - OpenMPI Prime Search
  *
  * Purpose: Find and print all prime numbers strictly less than an
  *          integer n using MPI for distributed parallel processing.
