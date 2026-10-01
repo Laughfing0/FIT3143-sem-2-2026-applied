@@ -1,0 +1,97 @@
+from PIL import Image
+import math
+
+# ------------------------------------------------------------
+# Load image
+# ------------------------------------------------------------
+
+image = Image.open("Applied 2/test_image.png").convert("RGB")
+
+width, height = image.size
+
+# Change this to test different angles
+angle = 45
+
+theta = math.radians(angle)
+
+cos_theta = math.cos(theta)
+sin_theta = math.sin(theta)
+
+# ------------------------------------------------------------
+# Calculate size of rotated image
+# ------------------------------------------------------------
+
+new_width = math.ceil(
+    abs(width * cos_theta) +
+    abs(height * sin_theta)
+)
+
+new_height = math.ceil(
+    abs(width * sin_theta) +
+    abs(height * cos_theta)
+)
+
+# Create output image
+rotated = Image.new(
+    "RGB",
+    (new_width, new_height),
+    "white"
+)
+
+# Centre of original image
+original_centre_x = (width - 1) / 2
+original_centre_y = (height - 1) / 2
+
+# Centre of output image
+new_centre_x = (new_width - 1) / 2
+new_centre_y = (new_height - 1) / 2
+
+# ------------------------------------------------------------
+# Process every OUTPUT pixel
+# ------------------------------------------------------------
+
+for y in range(new_height):
+    for x in range(new_width):
+
+        # Position relative to output centre
+        centred_x = x - new_centre_x
+        centred_y = y - new_centre_y
+
+        # Inverse rotation
+        source_x = (
+            centred_x * cos_theta +
+            centred_y * sin_theta
+        )
+
+        source_y = (
+            -centred_x * sin_theta +
+            centred_y * cos_theta
+        )
+
+        # Move back to original image coordinates
+        source_x += original_centre_x
+        source_y += original_centre_y
+
+        # Nearest-neighbour sampling
+        source_x = round(source_x)
+        source_y = round(source_y)
+
+        # Check whether source pixel is inside image
+        if (
+            0 <= source_x < width and
+            0 <= source_y < height
+        ):
+            rotated.putpixel(
+                (x, y),
+                image.getpixel((source_x, source_y))
+            )
+
+# ------------------------------------------------------------
+# Save result
+# ------------------------------------------------------------
+
+from pathlib import Path
+
+output_filename = Path(__file__).parent / f"rotated_cpu_{angle}.png"
+
+rotated.save(output_filename)
