@@ -411,8 +411,8 @@ int main()
     );
 
     dim3 grid(
-        (outputWidth + block.x - 1) / block.x,
-        (outputHeight + block.y - 1) / block.y
+        (outputWidth + block.x - 1) / block.x, // Calculate number of blocks in x dimension
+        (outputHeight + block.y - 1) / block.y // Calculate number of blocks in y dimension
     );
 
     std::cout << "Block size: "
