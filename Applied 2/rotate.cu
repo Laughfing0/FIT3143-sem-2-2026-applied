@@ -33,7 +33,7 @@ bool loadPPM(
     int& height
 )
 {
-    std::ifstream file(filename, std::ios::binary);
+    std::ifstream file(filename, std::ios::binary); // input file stream to read binary data
 
     if (!file)
     {
@@ -43,7 +43,7 @@ bool loadPPM(
         return false;
     }
 
-    std::string format;
+    std::string format; // PPM format identifier (e.g., "P6")
     file >> format;
 
     if (format != "P6")
@@ -54,7 +54,7 @@ bool loadPPM(
         return false;
     }
 
-    file >> width >> height;
+    file >> width >> height; // Read image dimensions
 
     int maxValue;
     file >> maxValue;
@@ -75,7 +75,7 @@ bool loadPPM(
     );
 
     file.read(
-        reinterpret_cast<char*>(image.data()),
+        reinterpret_cast<char*>(image.data()), // Read pixel data into the image vector
         image.size()
     );
 
